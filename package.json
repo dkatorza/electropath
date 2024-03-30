@@ -8,11 +8,23 @@
   "scripts": {
     "build": "tsup index.ts --format cjs,esm --dts",
     "release": "pnpm run build && changeset publish",
+    "build-test-app": "tsup test-app/main.ts --outDir test-app/dist --format cjs",
+    "start-test-app": "pnpm build-test-app && electron test-app/dist/main.js",
     "lint": "tsc"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
+    "@types/react": "^18.2.73",
+    "@types/react-dom": "^18.2.23",
+    "electron": "^29.1.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "tsup": "^8.0.2",
     "typescript": "^4.9.5"
+  },
+  "peerDependencies": {
+    "electron": "^29.1.6",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   }
 }
