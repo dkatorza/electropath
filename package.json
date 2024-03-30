@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsup index.ts --format cjs,esm --dts",
     "release": "pnpm run build && changeset publish",
-    "build-test-app": "tsup test-app/main.ts --outDir test-app/dist --format cjs",
+    "build-test-app": "tsup test-app/main.ts test-app/renderer.tsx --outDir test-app/dist --format cjs",
     "start-test-app": "pnpm build-test-app && electron test-app/dist/main.js",
     "lint": "tsc"
   },
@@ -17,15 +17,18 @@
     "@types/node": "^20.12.2",
     "@types/react": "^18.2.73",
     "@types/react-dom": "^18.2.23",
+    "@types/react-router-dom": "^5.3.3",
     "electron": "^29.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
     "tsup": "^8.0.2",
     "typescript": "^4.9.5"
   },
   "peerDependencies": {
-    "electron": "^29.1.6",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "electron": ">=11.0.0",
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0",
+    "react-router-dom": ">=5.0.0"
   }
 }
