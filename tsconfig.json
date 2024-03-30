@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es2016",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "module": "CommonJS",
+    "noEmit": true,
+  }
+}
