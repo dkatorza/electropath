@@ -14,13 +14,13 @@ function App() {
               <Link to='/'>Home</Link>
             </li>
             <li>
-              <Link to='/sample'>Sample Route</Link>
+              <Link to='/dashboard'>Sample Route</Link>
             </li>
           </ul>
         </nav>
         <Routes>
           <Route path='/' element={<Home />} />
-          <Route path='/sample' element={<SampleRoute />} />
+          <Route path='/notifications' element={<SampleRoute />} />
         </Routes>
       </div>
     </Router>
