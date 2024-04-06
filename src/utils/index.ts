@@ -1,4 +1,4 @@
-const { randomBytes } = require('crypto');
+import { randomBytes } from 'crypto';
 
 export function generateUniqueId(path: string) {
   const sanitizedPath = path.replace(/\W+/g, '-');

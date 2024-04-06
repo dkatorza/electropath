@@ -1,15 +1,12 @@
 {
-  "name": "electropath",
+  "name": "electropather",
   "license": "MIT",
   "version": "0.0.1",
   "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsup index.ts --format cjs,esm --dts",
-    "release": "pnpm run build && changeset publish",
-    "build-test-app": "tsup test-app/main.ts test-app/renderer.tsx --outDir test-app/dist --format cjs",
-    "start-test-app": "pnpm build-test-app && electron test-app/dist/main.js",
+    "build:lib": "tsup",
     "lint": "tsc"
   },
   "devDependencies": {
@@ -22,6 +19,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
+    "ts-loader": "^9.5.1",
     "tsup": "^8.0.2",
     "typescript": "^4.9.5"
   },

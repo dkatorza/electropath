@@ -1,23 +1,51 @@
 import { BrowserWindow } from 'electron';
+import * as path from 'path';
 import { InternalRouteMetadata, RouteConfig, RoutesConfig } from './interfaces';
 import { generateUniqueId } from '../utils';
 
 const routeMetadataMap = new Map<string, InternalRouteMetadata>();
 const windowHandlerMap = new Map<string, () => void>();
 
-function invokeHandlerForRoute(path: string): void {
+const WINDOW_LISTENER = `
+document.addEventListener('click', (event) => {
+  console.log('HERE THE CLICK', event);
+  let target;
+  if (event.target instanceof Element) {
+    target = event.target?.closest('a[target="_blank"]');
+  }
+
+  if (target) {
+    event.preventDefault();
+    const href = target.getAttribute('href') || '';
+
+    const isExternal = /^(https?:|mailto:|ftp:)/.test(href);
+
+    if (window.electroPathApi && window.electroPathApi.sendMessage) {
+      if (isExternal) {
+        window.electroPathApi.sendMessage('open-external-link', href);
+      } else {
+        window.electroPathApi.sendMessage('open-new-window', href);
+      }
+    }
+  }
+})
+`;
+
+export function invokeHandlerForRoute(path: string): void {
   const handler = windowHandlerMap.get(path);
+  console.log('handler', windowHandlerMap);
   if (handler) {
     handler();
   }
 }
 
-function handleExternalWindow(
+function handleNewWindowRequest(
   routeConfig: RouteConfig,
   baseRoute: string
 ): void {
   const metadata = routeMetadataMap.get(routeConfig.path);
-
+  console.log('routeConfig', routeConfig);
+  console.log('baseRoute', baseRoute);
   if (!metadata) return;
 
   let targetWindow = metadata.window;
@@ -32,7 +60,22 @@ function handleExternalWindow(
   }
 
   targetWindow = new BrowserWindow(routeConfig.browserWindowOptions || {});
-  targetWindow.loadURL(`${baseRoute}${routeConfig.path}`);
+
+  let urlPath = `file://${path.join(__dirname, baseRoute)}`;
+  if (routeConfig.path) {
+    urlPath += `#${routeConfig.path}`;
+  }
+  targetWindow.loadURL(urlPath);
+
+  targetWindow.webContents.on('did-finish-load', () => {
+    targetWindow?.webContents.executeJavaScriptInIsolatedWorld(
+      targetWindow.id,
+      [{ code: WINDOW_LISTENER }]
+    );
+  });
+
+  console.log('targetWindow-ID', targetWindow.id);
+  console.log('typeof targetWindow-ID', typeof targetWindow.id);
 
   if (routeConfig.configureWebContents) {
     routeConfig.configureWebContents(targetWindow.webContents);
@@ -111,7 +154,32 @@ export function configureRoutes(config: RoutesConfig): void {
     });
 
     windowHandlerMap.set(routeConfig.path, () =>
-      handleExternalWindow(routeConfig, config.baseRoute)
+      handleNewWindowRequest(routeConfig, config.baseRoute)
     );
+  });
+}
+
+export function setGlobalListener() {
+  document.addEventListener('click', (event) => {
+    console.log('HERE THE CLICK', event);
+    let target;
+    if (event.target instanceof Element) {
+      target = event.target?.closest('a[target="_blank"]');
+    }
+
+    if (target) {
+      event.preventDefault();
+      const href = target.getAttribute('href') || '';
+
+      const isExternal = /^(https?:|mailto:|ftp:)/.test(href);
+
+      if (window.electroPathApi && window.electroPathApi.sendMessage) {
+        if (isExternal) {
+          window.electroPathApi.sendMessage('open-external-link', href);
+        } else {
+          window.electroPathApi.sendMessage('open-new-window', href);
+        }
+      }
+    }
   });
 }

@@ -3,10 +3,10 @@
     "jsx": "react",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "target": "es2016",
+    "moduleResolution":"Node",
+    "target": "es2020",
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "module": "CommonJS",
-    "noEmit": true,
+    "module": "ESNext",
   }
 }
