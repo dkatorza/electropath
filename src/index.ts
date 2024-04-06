@@ -1,1 +1,1 @@
-export { setGlobalListener, configureRoutes } from './core';
+export { electroPatherListener, configureRoutes } from './core';

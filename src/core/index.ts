@@ -1,14 +1,13 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { InternalRouteMetadata, RouteConfig, RoutesConfig } from './interfaces';
 import { generateUniqueId } from '../utils';
 
 const routeMetadataMap = new Map<string, InternalRouteMetadata>();
 const windowHandlerMap = new Map<string, () => void>();
-
+const MSG_PREFIX = '#electropather_';
 const WINDOW_LISTENER = `
 document.addEventListener('click', (event) => {
-  console.log('HERE THE CLICK', event);
   let target;
   if (event.target instanceof Element) {
     target = event.target?.closest('a[target="_blank"]');
@@ -17,26 +16,32 @@ document.addEventListener('click', (event) => {
   if (target) {
     event.preventDefault();
     const href = target.getAttribute('href') || '';
-
     const isExternal = /^(https?:|mailto:|ftp:)/.test(href);
-
-    if (window.electroPathApi && window.electroPathApi.sendMessage) {
-      if (isExternal) {
-        window.electroPathApi.sendMessage('open-external-link', href);
-      } else {
-        window.electroPathApi.sendMessage('open-new-window', href);
-      }
+   
+    if (window?.electroPatherApi?.sendMessage) {
+      const messageType = isExternal ? 'open-external-link' : 'open-new-window'
+      window.electroPatherApi.sendMessage('${MSG_PREFIX}' + messageType, href);
     }
   }
 })
 `;
 
-export function invokeHandlerForRoute(path: string): void {
+function invokeHandlerForRoute(path: string): void {
   const handler = windowHandlerMap.get(path);
-  console.log('handler', windowHandlerMap);
+
   if (handler) {
     handler();
   }
+}
+
+export function electroPatherListener(): void {
+  ipcMain.on(`${MSG_PREFIX}open-new-window`, (event, path) => {
+    invokeHandlerForRoute(path);
+  });
+
+  ipcMain.on(`${MSG_PREFIX}_open-external-link`, (event, path) => {
+    shell.openExternal(path);
+  });
 }
 
 function handleNewWindowRequest(
@@ -44,8 +49,6 @@ function handleNewWindowRequest(
   baseRoute: string
 ): void {
   const metadata = routeMetadataMap.get(routeConfig.path);
-  console.log('routeConfig', routeConfig);
-  console.log('baseRoute', baseRoute);
   if (!metadata) return;
 
   let targetWindow = metadata.window;
@@ -68,14 +71,8 @@ function handleNewWindowRequest(
   targetWindow.loadURL(urlPath);
 
   targetWindow.webContents.on('did-finish-load', () => {
-    targetWindow?.webContents.executeJavaScriptInIsolatedWorld(
-      targetWindow.id,
-      [{ code: WINDOW_LISTENER }]
-    );
+    targetWindow?.webContents.executeJavaScript(WINDOW_LISTENER);
   });
-
-  console.log('targetWindow-ID', targetWindow.id);
-  console.log('typeof targetWindow-ID', typeof targetWindow.id);
 
   if (routeConfig.configureWebContents) {
     routeConfig.configureWebContents(targetWindow.webContents);
@@ -101,6 +98,8 @@ function handleNewWindowRequest(
  * This setup includes options to open routes in new windows and to control whether
  * multiple instances of those windows are allowed.
  *
+ * @param {BrowserWindow} mainAppWindow - The main Electron BrowserWindow instance of the application.
+ *        This window is used to set up a global listener for route changes.
  * @param {RoutesConfig} config - The configuration object for routing, containing:
  *   - `baseRoute`: The base URL of the application.
  *   - `routes`: An array detailing the behavior of specific routes. Each route object can include:
@@ -116,8 +115,9 @@ function handleNewWindowRequest(
  * ### Example Usage
  *
  * ```typescript
- * import { configureRoutes } from '@yourlibrary';
+ * import { configureRoutes } from '@electropather';
  *
+ * const mainAppWindow = new BrowserWindow({  BrowserWindow options  })
  * const routingConfig: RoutesConfig = {
  *   baseRoute: 'https://yourapp.com',
  *   routes: [
@@ -141,10 +141,16 @@ function handleNewWindowRequest(
  *   ],
  * };
  *
- * configureRoutes(routingConfig);
+ * configureRoutes(mainAppWindow,routingConfig);
  * ```
  */
-export function configureRoutes(config: RoutesConfig): void {
+export function configureRoutes(
+  mainAppWindow: BrowserWindow,
+  config: RoutesConfig
+): void {
+  mainAppWindow.webContents.on('did-finish-load', () => {
+    mainAppWindow?.webContents.executeJavaScript(WINDOW_LISTENER);
+  });
   config.routes.forEach((routeConfig: RouteConfig) => {
     const id = generateUniqueId(routeConfig.path);
 
@@ -156,30 +162,5 @@ export function configureRoutes(config: RoutesConfig): void {
     windowHandlerMap.set(routeConfig.path, () =>
       handleNewWindowRequest(routeConfig, config.baseRoute)
     );
-  });
-}
-
-export function setGlobalListener() {
-  document.addEventListener('click', (event) => {
-    console.log('HERE THE CLICK', event);
-    let target;
-    if (event.target instanceof Element) {
-      target = event.target?.closest('a[target="_blank"]');
-    }
-
-    if (target) {
-      event.preventDefault();
-      const href = target.getAttribute('href') || '';
-
-      const isExternal = /^(https?:|mailto:|ftp:)/.test(href);
-
-      if (window.electroPathApi && window.electroPathApi.sendMessage) {
-        if (isExternal) {
-          window.electroPathApi.sendMessage('open-external-link', href);
-        } else {
-          window.electroPathApi.sendMessage('open-new-window', href);
-        }
-      }
-    }
   });
 }
